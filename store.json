@@ -1,0 +1,8 @@
+{
+  "probes": [
+    "constraint-stack-v1",
+    "policy-pressure-v1",
+    "verbatim-fidelity-v1"
+  ],
+  "runs": []
+}
