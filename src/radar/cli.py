@@ -4,7 +4,7 @@ Skeleton only. Wiring shape is given; every handler body is yours.
 """
 
 import argparse
-import sys  # noqa: F401  (stdin.read for `log`, stderr for errors)
+import sys  
 
 from radar.store import RadarError  # plus whatever else you need
 
