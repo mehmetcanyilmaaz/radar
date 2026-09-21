@@ -3,7 +3,9 @@
 Skeleton only — every TODO is yours. Contracts come from RADAR-SPEC-W3.md.
 """
 
+import copy
 import json
+import os
 
 STORE_PATH = "store.json"
 DEFAULT_PROBES = [
@@ -106,12 +108,43 @@ def load_store(path: str = STORE_PATH) -> dict:
     TODO valid JSON    -> parse; convert each run dict via Run.from_dict
     TODO bad JSON/empty-> catch json.JSONDecodeError, raise StoreCorruptedError from it
     """
-    raise NotImplementedError
+
+    if not os.path.exists(path):
+        return {"probes": copy.deepcopy(DEFAULT_PROBES), "runs": []}
+
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        raise StoreCorruptedError(f"Store file is not valid JSON: {path}") from e
+
+    if not isinstance(data, dict):
+        raise StoreCorruptedError("Store file does not contain a JSON object")
+    
+    return {
+        "probes": data.get("probes", copy.deepcopy(DEFAULT_PROBES)),
+        "runs": [Run.from_dict(run_dict) for run_dict in data.get("runs", [])],
+    }
+
+
 
 
 def save_store(store: dict, path: str = STORE_PATH) -> None:
     """Inverse of load_store: Runs back to dicts, json.dump with indent=2."""
-    raise NotImplementedError
+
+    for run in store.get("runs", []):
+        if not isinstance(run, Run):
+            raise RadarError("All items in store['runs'] must be Run instances")
+
+    data = {
+        "probes": store.get("probes"),
+        "runs": [run.to_dict() for run in store.get("runs", [])],
+    }
+
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    
 
 
 def add_run(store: dict, run: Run) -> None:
