@@ -3,7 +3,7 @@
 Skeleton only — every TODO is yours. Contracts come from RADAR-SPEC-W3.md.
 """
 
-import json  # noqa: F401  (you'll use it; remove the noqa when you do)
+import json
 
 STORE_PATH = "store.json"
 DEFAULT_PROBES = [
