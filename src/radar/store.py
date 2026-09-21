@@ -45,6 +45,57 @@ class Run:
     Contract: Run.from_dict(r.to_dict()) == r   (there's a test for this)
     """
 
+    def __init__(self, probe: str, model: str, date: str, response: str, verdict: str, note: str = ""):
+        if verdict not in VERDICTS:
+            raise RadarError(f"Invalid verdict: {verdict}")
+        self.probe = probe
+        self.model = model
+        self.date = date
+        self.response = response
+        self.verdict = verdict
+        self.note = note
+
+    def __repr__(self) -> str:
+        short_response = (self.response[:40] + "…") if len(self.response) > 40 else self.response
+        return (
+            f"Run(probe={self.probe!r}, model={self.model!r}, date={self.date!r}, "
+            f"response={short_response!r}, verdict={self.verdict!r}, note={self.note!r})"
+        )
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Run):
+            return NotImplemented
+        return (
+            self.probe == other.probe and
+            self.model == other.model and
+            self.date == other.date and
+            self.response == other.response and
+            self.verdict == other.verdict and
+            self.note == other.note
+        )
+
+    def to_dict(self) -> dict:
+        """Return a dict suitable for JSON storage."""
+        return {
+            "probe": self.probe,
+            "model": self.model,
+            "date": self.date,
+            "response": self.response,
+            "verdict": self.verdict,
+            "note": self.note,
+        }
+    @classmethod
+    def from_dict(cls, d: dict) -> "Run":
+        """Class method: build a Run from a store dict."""
+        return cls(
+            probe=d["probe"],
+            model=d["model"],
+            date=d["date"],
+            response=d["response"],
+            verdict=d["verdict"],
+            note=d["note"],
+        )
+
 
 # --- store I/O ------------------------------------------------------------
 
