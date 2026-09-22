@@ -4,7 +4,7 @@ Skeleton only. Wiring shape is given; every handler body is yours.
 """
 
 import argparse
-import sys  
+import sys
 
 from radar.store import RadarError  # plus whatever else you need
 
