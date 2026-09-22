@@ -147,10 +147,21 @@ def save_store(store: dict, path: str = STORE_PATH) -> None:
     
 
 
-def add_run(store: dict, run: Run) -> None:
-    """Append run to store["runs"].
+def add_run(store: dict, run: Run) -> bool:
+    """Append run to store["runs"]. Returns True if it duplicates an existing
+    (probe, model, date) — duplicates are allowed, the caller decides whether to warn.
 
-    TODO run.probe not in store["probes"]            -> UnknownProbeError
-    TODO existing run with same (probe, model, date) -> DuplicateRunError
+    Raises UnknownProbeError if run.probe isn't in store["probes"].
     """
-    raise NotImplementedError
+    known = {p["name"] for p in store.get("probes", [])}
+    if run.probe not in known:
+        raise UnknownProbeError(f"Probe '{run.probe}' is not known in the store")
+
+    duplicate = any(
+        r.probe == run.probe and r.model == run.model and r.date == run.date
+        for r in store.get("runs", [])
+    )
+
+    store.setdefault("runs", []).append(run)
+    return duplicate
+
