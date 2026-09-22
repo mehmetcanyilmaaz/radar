@@ -4,5 +4,14 @@
     "policy-pressure-v1",
     "verbatim-fidelity-v1"
   ],
-  "runs": []
+  "runs": [
+    {
+      "probe": "constraint-stack-v1",
+      "model": "opus-5",
+      "date": "2026-09-22",
+      "response": "test response",
+      "verdict": "pass",
+      "note": ""
+    }
+  ]
 }

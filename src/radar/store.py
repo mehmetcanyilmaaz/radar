@@ -153,7 +153,7 @@ def add_run(store: dict, run: Run) -> bool:
 
     Raises UnknownProbeError if run.probe isn't in store["probes"].
     """
-    known = {p["name"] for p in store.get("probes", [])}
+    known = set(store.get("probes", []))
     if run.probe not in known:
         raise UnknownProbeError(f"Probe '{run.probe}' is not known in the store")
 

@@ -4,26 +4,44 @@ Skeleton only. Wiring shape is given; every handler body is yours.
 """
 
 import argparse
+from asyncio import run
+from datetime import date
 import sys
 
-from radar.store import RadarError  # plus whatever else you need
+from radar import store
+from radar.store import *  # plus whatever else you need
 
 
-def cmd_probes(args) -> None:
+def cmd_probes(args) -> int:
     """Print probe names, one per line."""
-    raise NotImplementedError
 
+    store = load_store()
+    for probe in store["probes"]:
+        print(probe)
+    return 0
+    
 
-def cmd_log(args) -> None:
-    """Read response from stdin until EOF, build a Run, add_run, save.
+def cmd_log(args) -> int:
+    try:
+        store = load_store()
+        if sys.stdin.isatty():
+            print("Paste response, then Ctrl-D:", file=sys.stderr)
+        response = sys.stdin.read()
+        run_date = args.date or date.today().isoformat()
+        run = Run(args.probe, args.model, run_date, response.strip(), args.verdict, args.note)
 
-    Print "Paste response, then Ctrl-D:" first.
-    Date: args.date or today (datetime.date.today().isoformat()).
-    """
-    raise NotImplementedError
+        duplicate = add_run(store, run)
+        save_store(store)
+    except RadarError as e:
+        print(f"radar: {e}", file=sys.stderr)
+        return 1
 
+    if duplicate:
+        print(f"warning: duplicate run for {run.probe}/{run.model} on {run.date}", file=sys.stderr)
+    return 0
+    
 
-def cmd_show(args) -> None:
+def cmd_show(args) -> int:
     """All runs for probe (optionally filtered by model), sorted by date.
 
     Per run: date, model, verdict, note — then response, indented.
@@ -31,7 +49,7 @@ def cmd_show(args) -> None:
     raise NotImplementedError
 
 
-def cmd_diff(args) -> None:
+def cmd_diff(args) -> int:
     """Latest run per model in args.models (comma-separated), stacked with headers."""
     raise NotImplementedError
 
@@ -44,6 +62,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_probes)
 
     p = sub.add_parser("log", help="record a run")
+    p.add_argument("--probe", required=True, help="probe name")
+    p.add_argument("--model", required=True, help="model identifier")
+    p.add_argument("--verdict", required=True, choices=VERDICTS, help="verdict string")
+    p.add_argument("--note", default="", help="optional note")
+    p.add_argument("--date", default=None, help="ISO date; defaults to today")
     # TODO: --probe (required), --model (required),
     #       --verdict (required, choices=VERDICTS), --note (default ""),
     #       --date (default None)
@@ -51,10 +74,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("show", help="show runs for a probe")
     # TODO: --probe (required), --model (optional)
+    p.add_argument("--probe", required=True, help="probe name")
+    p.add_argument("--model", help="model identifier")
     p.set_defaults(func=cmd_show)
 
     p = sub.add_parser("diff", help="compare two models on a probe")
     # TODO: --probe (required), --models (required, "a,b")
+    p.add_argument("--probe", required=True, help="probe name")
+    p.add_argument("--models", required=True, help="comma-separated model identifiers")
     p.set_defaults(func=cmd_diff)
 
     return parser
