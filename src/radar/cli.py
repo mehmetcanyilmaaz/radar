@@ -4,12 +4,17 @@ Skeleton only. Wiring shape is given; every handler body is yours.
 """
 
 import argparse
-from asyncio import run
-from datetime import date
 import sys
+from datetime import UTC, datetime
 
-from radar import store
-from radar.store import *  # plus whatever else you need
+from radar.store import (
+    VERDICTS,
+    RadarError,
+    Run,
+    add_run,
+    load_store,
+    save_store,
+)
 
 
 def cmd_probes(args) -> int:
@@ -27,7 +32,7 @@ def cmd_log(args) -> int:
         if sys.stdin.isatty():
             print("Paste response, then Ctrl-D:", file=sys.stderr)
         response = sys.stdin.read()
-        run_date = args.date or date.today().isoformat()
+        run_date = args.date or datetime.now(UTC).date().isoformat()
         run = Run(args.probe, args.model, run_date, response.strip(), args.verdict, args.note)
 
         duplicate = add_run(store, run)
