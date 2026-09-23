@@ -7,10 +7,12 @@ import argparse
 import sys
 from datetime import UTC, datetime
 
+from radar import store
 from radar.store import (
     VERDICTS,
     RadarError,
     Run,
+    UnknownProbeError,
     add_run,
     load_store,
     save_store,
@@ -51,8 +53,25 @@ def cmd_show(args) -> int:
 
     Per run: date, model, verdict, note — then response, indented.
     """
-    raise NotImplementedError
 
+    try:
+        store = load_store()
+        if args.probe not in store["probes"]:
+            raise UnknownProbeError(f"Probe '{args.probe}' is not known in the store")
+        runs = [run for run in store["runs"] if run.probe == args.probe]
+        if args.model:
+            runs = [run for run in runs if run.model == args.model]
+        runs.sort(key=lambda r: r.date) # sorts the runs by date in ascending order
+
+        for run in runs:
+            print(f"{run.date} {run.model} {run.verdict} {run.note}")
+            for line in run.response.splitlines():
+                print(f"    {line}")
+            print()
+        return 0
+    except RadarError as e:
+        print(f"radar: {e}", file=sys.stderr)
+        return 1
 
 def cmd_diff(args) -> int:
     """Latest run per model in args.models (comma-separated), stacked with headers."""
