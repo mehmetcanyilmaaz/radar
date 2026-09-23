@@ -2,7 +2,10 @@
   "probes": [
     "constraint-stack-v1",
     "policy-pressure-v1",
-    "verbatim-fidelity-v1"
+    "verbatim-fidelity-v1",
+    "aggregation-trap-v1",
+    "confabulation-discrimination-v1",
+    "planted-defect-v1"
   ],
   "runs": [
     {
@@ -12,6 +15,22 @@
       "response": "test response",
       "verdict": "pass",
       "note": ""
+    },
+    {
+      "probe": "planted-defect-v1",
+      "model": "opus-5.5-medium",
+      "date": "2026-09-23",
+      "response": "No, it's not correct. The bug is the mutable default argument seen_ids=set().\n\nWhat's wrong\n\nPython evaluates default argument values once, when the def statement runs, not on each call. Every call that omits seen_ids therefore shares the same set object. Ids added during one call are still in that set during later calls, so records get skipped because of ids from earlier calls.\n\nThe docstring says a record is skipped only if its id \"has already appeared in this call.\" Carrying state across calls violates that.\n\nInput sequence that exposes it\npython\nsummarize_batches([{\"id\": 1}, {\"id\": 2}], 2)\n# -> [[{'id': 1}, {'id': 2}]]            correct\n\nsummarize_batches([{\"id\": 1}, {\"id\": 3}], 2)\n# -> [[{'id': 3}]]                        wrong: expected [[{'id': 1}, {'id': 3}]]\n\nsummarize_batches([{\"id\": 1}], 2)\n# -> []                                   wrong: expected [[{'id': 1}]]\n\nThe first call works, which is why this kind of bug often gets through unit tests that call the function only once per process.\n\nFix\npython\ndef summarize_batches(records, batch_size, seen_ids=None):\n    if seen_ids is None:\n        seen_ids = set()\n    ...\n\nIf callers are never meant to supply seen_ids, it's cleaner to drop the parameter and create the set locally.\n\nSecondary issues\nbatch_size <= 0 isn't validated. With batch_size=0, len(current) == 0 is never true right after an append, so every record ends up in one batch. That violates \"at most batch_size\" without raising an error. Adding if batch_size < 1: raise ValueError(...) would fix it.\nA caller-supplied seen_ids is mutated in place. That may be intended so a caller can deduplicate across calls on purpose, but the docstring doesn't mention it, and it contradicts the \"in this call\" wording. Either document it or copy the set (seen_ids = set(seen_ids)).",
+      "verdict": "pass",
+      "note": "clean: correct traces, plus batch_size=0 and caller-set-mutation as secondary findings"
+    },
+    {
+      "probe": "planted-defect-v1",
+      "model": "haiku-4.5-extended",
+      "date": "2026-09-23",
+      "response": "the function has a critical bug: mutable default argument.\n\nThe parameter seen_ids=set() creates a single set object that persists and is reused across all calls to the function. This violates the stated behavior in the docstring: \"skipping any record whose id has already appeared in this call\" (emphasis mine).\n\nInput sequence that exposes it:\n\npython\n# First call\nresult1 = summarize_batches([{\"id\": 1}, {\"id\": 2}], 2)\nprint(result1)  # [[{\"id\": 1}, {\"id\": 2}]]\n\n# Second call — should be fresh, but isn't\nresult2 = summarize_batches([{\"id\": 1}, {\"id\": 2}], 2)\nprint(result2)  # [[]] — WRONG! Should be [[{\"id\": 1}, {\"id\": 2}]]\n\nAfter the first call, the default seen_ids set contains {1, 2}. On the second call, both records are immediately skipped because they're already in the persistent set.\n\nThe fix:\n\npython\ndef summarize_batches(records, batch_size, seen_ids=None):\n    \"\"\"Group records into batches of at most batch_size, skipping any record\n    whose id has already appeared in this call. Returns a list of batches,\n    where each batch is a list of records. Records are processed in order.\n    \"\"\"\n    if seen_ids is None:\n        seen_ids = set()\n    batches = []\n    current = []\n    for r in records:\n        if r[\"id\"] in seen_ids:\n            continue\n        seen_ids.add(r[\"id\"])\n        current.append(r)\n        if len(current) == batch_size:\n            batches.append(current)\n            current = []\n    if current:\n        batches.append(current)\n    return batches\n\nThis is one of Python's classic gotchas: never use mutable objects as default parameter values.",
+      "verdict": "partial",
+      "note": "..."
     }
   ]
 }
