@@ -74,7 +74,39 @@ def cmd_show(args) -> int:
 
 def cmd_diff(args) -> int:
     """Latest run per model in args.models (comma-separated), stacked with headers."""
-    raise NotImplementedError
+
+    models = [m.strip() for m in args.models.split(",")]
+    if len(models) != 2:
+        print("radar: exactly two models must be specified for diff", file=sys.stderr)
+        return 1
+    elif models[0] == models[1]:
+        print("radar: two distinct models must be specified for diff", file=sys.stderr)
+        return 1
+
+    try:
+        store = load_store()
+        if args.probe not in store["probes"]:
+            raise UnknownProbeError(f"Probe '{args.probe}' is not known in the store")
+
+        for model in models:
+            model_runs = [r for r in store["runs"]
+                          if r.probe == args.probe and r.model == model]
+            if not model_runs:
+                print(f"=== {model} (no runs) ===")
+                print()
+                continue
+
+            latest = max(model_runs, key=lambda r: r.date)
+            suffix = f", showing latest of {len(model_runs)}" if len(model_runs) > 1 else ""
+            print(f"=== {model} ({latest.date}, {latest.verdict}{suffix}) ===")
+            for line in latest.response.splitlines():
+                print(f"    {line}")
+            print()
+        return 0
+    except RadarError as e:
+        print(f"radar: {e}", file=sys.stderr)
+        return 1
+
 
 
 def build_parser() -> argparse.ArgumentParser:
