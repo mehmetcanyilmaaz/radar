@@ -12,5 +12,7 @@ jobs:
         run: uv sync
       - name: Lint
         run: uv run ruff check .
+      - name: Typecheck
+        run: uv run mypy src/
       - name: Tests
         run: uv run pytest

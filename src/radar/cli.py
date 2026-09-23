@@ -7,7 +7,6 @@ import argparse
 import sys
 from datetime import UTC, datetime
 
-from radar import store
 from radar.store import (
     VERDICTS,
     RadarError,
