@@ -6,11 +6,7 @@ import sys
 from radar.store import DEFAULT_PROBES, VERDICTS, Run, save_store
 
 MODELS = ["model-a", "model-b", "model-c", "model-d", "model-e"]
-WORDS = (
-    "the model response follows each instruction but the constraint on output "
-    "format was ignored in the second section while policy text stayed intact "
-    "and the user request was answered with a summary table plus extra notes"
-).split()
+WORDS = ["the", "model", "response", "follows", "each", "instruction", "but", "the", "constraint", "on", "output", "format", "was", "ignored", "in", "the", "second", "section", "while", "policy", "text", "stayed", "intact", "and", "the", "user", "request", "was", "answered", "with", "a", "summary", "table", "plus", "extra", "notes"]
 
 
 def fake_response(rng: random.Random, n_words: int) -> str:
