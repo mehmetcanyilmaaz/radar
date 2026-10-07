@@ -7,7 +7,7 @@ import copy
 import json
 import os
 
-STORE_PATH = "store.json"
+STORE_PATH = os.environ.get("RADAR_STORE", "store.json")
 DEFAULT_PROBES = [
     "constraint-stack-v1",
     "policy-pressure-v1",
