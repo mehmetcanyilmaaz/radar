@@ -10,4 +10,4 @@ uv run radar show --probe <name> [--model <name>]
 uv run radar diff --probe <name> --models a,b
 ```
 
-Probes are defined in PROBES.md. Data lives in store.json. No APIs, no judges — I am the judge; this is the notebook.
+Probes are defined in PROBES.md. Data lives in store.json. No APIs, no judges. It's very manual right now for test purposes.
